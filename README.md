@@ -24,7 +24,7 @@ Grammar custom tools require a GPT-5+ pi-ai route whose model metadata enables `
 Install the bundle into every DSH profile where the preset should be available:
 
 ~~~sh
-dsh plugin --profile web add github:ryanzhou/dsh-codex
+dsh plugin --profile web add @ryantzhou/dsh-codex
 ~~~
 
 After the command completes, restart that DSH process and select **Codex** when creating a session.
@@ -32,7 +32,7 @@ After the command completes, restart that DSH process and select **Codex** when 
 Remove it with the matching package spec:
 
 ~~~sh
-dsh plugin --profile web remove @ryanzhou/dsh-codex
+dsh plugin --profile web remove @ryantzhou/dsh-codex
 ~~~
 
 ## How it works

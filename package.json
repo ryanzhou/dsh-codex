@@ -1,5 +1,5 @@
 {
-  "name": "@ryanzhou/dsh-codex",
+  "name": "@ryantzhou/dsh-codex",
   "version": "0.1.0",
   "description": "Codex-style tools and agent preset for DeepSeek Harness",
   "type": "module",
