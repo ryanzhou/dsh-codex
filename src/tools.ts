@@ -4,21 +4,22 @@ import type { ContentBlock } from "@deepseek-ai/dsh-llm";
 import type { PromptAssembly } from "@deepseek-ai/dsh-system-prompt";
 import { defineTool, type FileDiff, type JsonValue, type ToolExecutionResult, type ToolRunContext } from "@deepseek-ai/dsh-tools";
 import { parsePatch } from "./apply-patch/index.js";
+import { registerUnifiedExec } from "./unified-exec.js";
 
 export const name = "codex-tools";
-export const inject = ["tools", "systemPrompt"];
+export const inject = ["tools", "systemPrompt", "jobs", "shell", "shellEnv", "sandboxPolicy", "subprocess"];
 
 const DELEGATE_TOOLS = new Set([
   "bash", "pwsh", "read", "write", "edit",
-  "todo_write", "ask_user_question", "read_image",
+  "todo_write", "ask_user_question", "read_image", "job_output", "job_list", "job_kill",
 ]);
 const DELEGATE_SECTIONS = new Set([
-  "tool:bash", "tool:pwsh", "tool:read", "tool:write", "tool:edit",
+  "tool:bash", "tool:pwsh", "tool:read", "tool:write", "tool:edit", "tool:jobs",
 ]);
 
 function hideDelegates(assembly: PromptAssembly): PromptAssembly {
   if (!assembly.tools.some((tool) => tool.name === "apply_patch") ||
-      !assembly.tools.some((tool) => tool.name === "shell_command")) return assembly;
+      !assembly.tools.some((tool) => tool.name === "exec_command")) return assembly;
   assembly.tools = assembly.tools.filter((tool) => !DELEGATE_TOOLS.has(tool.name));
   assembly.sections = assembly.sections.filter((section) => !DELEGATE_SECTIONS.has(section.name));
   return assembly;
@@ -108,33 +109,6 @@ function sandboxText(result: ShellResult): string {
     : "";
 }
 
-function outputText(name: string, output: ShellResult["stdout"]): string {
-  const truncated = output.truncated
-    ? "[" + name + " truncated; full output: " + (output.spillPath ?? "unavailable") + "]"
-    : "";
-  return [output.text, truncated].filter(Boolean).join("\n");
-}
-
-function formatShell(result: ShellResult, elapsedMs: number): string {
-  const output = [outputText("stdout", result.stdout), outputText("stderr", result.stderr), sandboxText(result)].filter(Boolean).join("\n");
-  const exit = result.exitCode === null ? "signal " + (result.signal ?? "unknown") : String(result.exitCode);
-  const timeout = result.timedOut ? "command timed out after " + result.timeoutMs + " milliseconds\n" : "";
-  return timeout + "Exit code: " + exit + "\nWall time: " + (elapsedMs / 1000).toFixed(1) + " seconds\nOutput:\n" + output;
-}
-
-function presentShellResult(result: { content: ContentBlock[]; isError: boolean }) {
-  if (result.isError) return;
-  const text = result.content.filter((block) => block.type === "text").map((block) => block.text).join("\n");
-  const match = /^(?:command timed out after [^\n]+\n)?Exit code: ([^\n]+)\nWall time: [^\n]+\nOutput:\n([\s\S]*)$/.exec(text);
-  if (!match) return;
-  const exit = match[1]!;
-  return {
-    card: "terminal" as const,
-    output: match[2]!,
-    ...(exit.startsWith("signal ") ? { signal: exit.slice(7) } : { exitCode: Number(exit) }),
-  };
-}
-
 export function apply(ctx: Context): void {
   ctx.on("system-prompt/assemble", async (assembly, _context, next) => hideDelegates(await next()));
   const shell = process.platform === "win32" ? "pwsh" : "bash";
@@ -164,37 +138,7 @@ export function apply(ctx: Context): void {
     },
   }));
 
-  ctx.tools.register(defineTool({
-    name: "shell_command",
-    description: "Runs a shell command and returns its output.\n- Always set the `workdir` param when using the shell_command function. Do not use `cd` unless absolutely necessary.",
-    parameters: {
-      command: { type: "string", required: true, description: "Shell script to run in the user's default shell." },
-      justification: { type: "string", description: "User-facing approval question for `require_escalated`; omit otherwise." },
-      sandbox_permissions: {
-        type: "string",
-        enum: ["use_default", "require_escalated"],
-        description: "Per-command sandbox override. Defaults to `use_default`; use `require_escalated` for unsandboxed execution.",
-      },
-      timeout_ms: { type: "number", description: "Maximum command runtime. Defaults to 10000 ms." },
-      workdir: { type: "string", description: "Working directory for the command. Defaults to the turn cwd." },
-    },
-    output: textOutput,
-    async execute(args, exec) {
-      const started = Date.now();
-      const result = await dispatch(ctx, exec, shell, {
-        command: args.command,
-        description: "Run a Codex shell command",
-        ...(args.workdir ? { workdir: args.workdir } : {}),
-        ...(args.timeout_ms === undefined ? {} : { timeoutMs: args.timeout_ms }),
-        ...(args.sandbox_permissions === "require_escalated"
-          ? { sandbox_permissions: "danger-full-access", justification: args.justification ?? "The command requires unrestricted filesystem access." }
-          : {}),
-      });
-      return formatShell(result.value as unknown as ShellResult, Date.now() - started);
-    },
-    presentCall: (args) => ({ card: "terminal", title: args.command, ...(args.workdir ? { cwd: args.workdir } : {}) }),
-    presentResult: (_args, result) => presentShellResult(result),
-  }));
+  registerUnifiedExec(ctx);
 
   ctx.tools.register(defineTool({
     name: "update_plan",

@@ -8,6 +8,7 @@ describe("Codex tool catalog", () => {
     const definitions: ToolDefinition[] = [];
     const ctx = {
       on: () => () => undefined,
+      jobs: { attachController: () => () => undefined },
       tools: {
         register: (definition: ToolDefinition) => { definitions.push(definition); return () => undefined; },
       },
@@ -17,7 +18,8 @@ describe("Codex tool catalog", () => {
 
     expect(definitions.map((tool) => tool.name)).toEqual([
       "apply_patch",
-      "shell_command",
+      "exec_command",
+      "write_stdin",
       "update_plan",
       "request_user_input",
       "view_image",
@@ -28,7 +30,7 @@ describe("Codex tool catalog", () => {
       required: ["patch"],
     });
     expect(Object.keys(definitions[1]?.parameters.properties ?? {})).toEqual([
-      "command", "justification", "sandbox_permissions", "timeout_ms", "workdir",
+      "cmd", "workdir", "tty", "yield_time_ms", "max_output_tokens", "justification", "sandbox_permissions",
     ]);
 
     expect(definitions[0]?.presentCall?.({ patch: [
@@ -40,17 +42,17 @@ describe("Codex tool catalog", () => {
       card: "diff",
       diffs: [{ path: "notes.txt", oldText: null, newText: "hello\n" }],
     });
-    expect(definitions[1]?.presentCall?.({ command: "pwd", workdir: "/work" })).toEqual({
+    expect(definitions[1]?.presentCall?.({ cmd: "pwd", workdir: "/work" })).toEqual({
       card: "terminal",
       title: "pwd",
       cwd: "/work",
     });
-    expect(definitions[2]?.presentCall?.({ plan: [{ step: "Review", status: "in_progress" }] })).toMatchObject({
+    expect(definitions[3]?.presentCall?.({ plan: [{ step: "Review", status: "in_progress" }] })).toMatchObject({
       title: "Update todo list",
       rawInput: [{ content: "Review", status: "in_progress" }],
     });
-    expect(definitions[3]?.presentCall?.({ questions: [] })).toMatchObject({ title: "Ask user" });
-    expect(definitions[4]?.presentCall?.({ path: "diagram.png" })).toMatchObject({
+    expect(definitions[4]?.presentCall?.({ questions: [] })).toMatchObject({ title: "Ask user" });
+    expect(definitions[5]?.presentCall?.({ path: "diagram.png" })).toMatchObject({
       title: "Read image diagram.png",
       locations: [{ path: "diagram.png" }],
     });
@@ -60,6 +62,7 @@ describe("Codex tool catalog", () => {
     let listener: (...args: never[]) => Promise<unknown> = async () => undefined;
     apply({
       on: (_event: string, value: typeof listener) => { listener = value; return () => undefined; },
+      jobs: { attachController: () => () => undefined },
       tools: { register: () => () => undefined },
     } as unknown as Context);
     const assembly = {
@@ -71,16 +74,18 @@ describe("Codex tool catalog", () => {
       contexts: [],
       tools: [
         { name: "bash" },
+        { name: "job_output" },
         { name: "read" },
         { name: "apply_patch" },
-        { name: "shell_command" },
+        { name: "exec_command" },
+        { name: "write_stdin" },
       ],
       variables: {},
     };
     expect(await listener(assembly as never, {} as never, (async () => assembly) as never)).toEqual({
       sections: [{ name: "deployment:persona", text: "Codex" }],
       contexts: [],
-      tools: [{ name: "apply_patch" }, { name: "shell_command" }],
+      tools: [{ name: "apply_patch" }, { name: "exec_command" }, { name: "write_stdin" }],
       variables: {},
     });
   });
@@ -89,6 +94,7 @@ describe("Codex tool catalog", () => {
     const definitions: ToolDefinition[] = [];
     apply({
       on: () => () => undefined,
+      jobs: { attachController: () => () => undefined },
       tools: {
         register: (definition: ToolDefinition) => { definitions.push(definition); return () => undefined; },
         execute: async () => ({
@@ -119,50 +125,4 @@ describe("Codex tool catalog", () => {
     await expect(request.execute({ questions: [] }, exec)).rejects.toThrow("one to three questions");
   });
 
-  it("preserves DSH sandbox and truncation metadata in shell_command output", async () => {
-    const definitions: ToolDefinition[] = [];
-    const ctx = {
-      on: () => () => undefined,
-      tools: {
-        register: (definition: ToolDefinition) => { definitions.push(definition); return () => undefined; },
-        execute: async () => ({
-          isError: false,
-          value: {
-            kind: "foreground",
-            exitCode: 1,
-            signal: null,
-            timedOut: false,
-            timeoutMs: 10000,
-            stdout: { text: "retained tail", truncated: true, spillPath: "/tmp/full-output.log" },
-            stderr: { text: "denied", truncated: false },
-            sandbox: { mode: "workspace-write", denied: true },
-          },
-          content: [],
-          additionalContexts: [],
-          concludesTurn: false,
-        }),
-      },
-    } as unknown as Context;
-    apply(ctx);
-    const shell = definitions.find((tool) => tool.name === "shell_command")!;
-    const value = await shell.execute({ command: "touch /outside" }, {
-      callId: "outer",
-      rootCallId: "outer",
-      token: Symbol("outer"),
-      signal: new AbortController().signal,
-      deferContext: () => undefined,
-      concludeTurn: () => undefined,
-    } as never);
-    expect(value).toContain("[sandbox: file access denied under workspace-write mode]");
-    expect(value).toContain("[stdout truncated; full output: /tmp/full-output.log]");
-    expect(value).not.toContain("Total output lines: 1");
-    expect(shell.presentResult?.({ command: "touch /outside" }, {
-      content: [{ type: "text", text: value as string }],
-      isError: false,
-    })).toEqual({
-      card: "terminal",
-      output: "retained tail\n[stdout truncated; full output: /tmp/full-output.log]\ndenied\n[sandbox: file access denied under workspace-write mode]",
-      exitCode: 1,
-    });
-  });
 });
