@@ -35,6 +35,17 @@ describe("preset root bridge", () => {
     expect(composition).toContain("name: '@deepseek-ai/dsh-compaction-tool-result-pruner'");
   });
 
+  it("composes native goal and plan lifecycles with Codex plan guidance", async () => {
+    const composition = await readFile(new URL("../agent-presets/codex/agent.cordis.yml", import.meta.url), "utf8");
+    expect(composition).toContain("name: '@deepseek-ai/dsh-tool-goal'");
+    expect(composition).toContain("name: '@deepseek-ai/dsh-plan-mode'");
+    expect(composition).toContain("isolate:\n    planMode: true");
+    expect(composition).toContain("# Plan Mode (Conversational)");
+    expect(composition).toContain("Plan Mode vs update_plan tool");
+    expect(composition).toContain("call `exit_plan_mode` with the complete plan markdown");
+    expect(composition).not.toContain("<proposed_plan>");
+  });
+
   it("exposes the package root for DSH client discovery and keeps tools on their own subpath", async () => {
     const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
     const host = await readFile(new URL("../cordis.patch.yml", import.meta.url), "utf8");

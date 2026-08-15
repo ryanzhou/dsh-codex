@@ -4,7 +4,9 @@ OpenAI Codex
 Copyright 2025 OpenAI
 
 Source: https://github.com/openai/codex
-Pinned revision: 3685a61dadefebb66690f8c0f945df044fc11b25
+Pinned revisions:
+- 3685a61dadefebb66690f8c0f945df044fc11b25 (tool grammar)
+- b3cc21737803549679e2009193c04205f7d8d19c (Plan Mode prompt)
 License: Apache License 2.0 (see THIRD_PARTY_LICENSES/Apache-2.0.txt)
 
 The bundled GPT-5.6 Sol prompt was sourced at the user's request from:

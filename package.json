@@ -44,6 +44,7 @@
     "@deepseek-ai/dsh-jobs": "0.1.0-rc.6",
     "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
     "@deepseek-ai/dsh-llm-pi-ai": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-plan-mode": "0.1.0-rc.6",
     "@deepseek-ai/dsh-sandbox": "0.1.0-rc.6",
     "@deepseek-ai/dsh-sandbox-policy": "0.1.0-rc.6",
     "@deepseek-ai/dsh-shell": "0.1.0-rc.6",
@@ -51,6 +52,7 @@
     "@deepseek-ai/dsh-subprocess": "0.1.0-rc.6",
     "@deepseek-ai/dsh-system-prompt": "0.1.0-rc.6",
     "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-tool-goal": "0.1.0-rc.6",
     "react": "^18.2.0"
   },
   "peerDependenciesMeta": {
@@ -64,6 +66,7 @@
     "@deepseek-ai/dsh-jobs": { "optional": true },
     "@deepseek-ai/dsh-llm": { "optional": true },
     "@deepseek-ai/dsh-llm-pi-ai": { "optional": true },
+    "@deepseek-ai/dsh-plan-mode": { "optional": true },
     "@deepseek-ai/dsh-sandbox": { "optional": true },
     "@deepseek-ai/dsh-sandbox-policy": { "optional": true },
     "@deepseek-ai/dsh-shell": { "optional": true },
@@ -71,6 +74,7 @@
     "@deepseek-ai/dsh-subprocess": { "optional": true },
     "@deepseek-ai/dsh-system-prompt": { "optional": true },
     "@deepseek-ai/dsh-tools": { "optional": true },
+    "@deepseek-ai/dsh-tool-goal": { "optional": true },
     "react": { "optional": true }
   },
   "devDependencies": {
@@ -84,6 +88,7 @@
     "@deepseek-ai/dsh-jobs": "0.1.0-rc.6",
     "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
     "@deepseek-ai/dsh-llm-pi-ai": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-plan-mode": "0.1.0-rc.6",
     "@deepseek-ai/dsh-sandbox": "0.1.0-rc.6",
     "@deepseek-ai/dsh-sandbox-policy": "0.1.0-rc.6",
     "@deepseek-ai/dsh-shell": "0.1.0-rc.6",
@@ -91,6 +96,7 @@
     "@deepseek-ai/dsh-subprocess": "0.1.0-rc.6",
     "@deepseek-ai/dsh-system-prompt": "0.1.0-rc.6",
     "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-tool-goal": "0.1.0-rc.6",
     "@earendil-works/pi-ai": "0.82.1",
     "@types/node": "^24.10.0",
     "@types/react": "~18.3.31",
