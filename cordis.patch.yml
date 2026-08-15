@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-codex
+      name: '@ryanzhou/dsh-codex/host'

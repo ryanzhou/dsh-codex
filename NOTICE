@@ -1,0 +1,18 @@
+dsh-codex includes grammar and behavioral definitions derived from:
+
+OpenAI Codex
+Copyright 2025 OpenAI
+
+Source: https://github.com/openai/codex
+Pinned revision: 3685a61dadefebb66690f8c0f945df044fc11b25
+License: Apache License 2.0 (see THIRD_PARTY_LICENSES/Apache-2.0.txt)
+
+The bundled GPT-5.6 Sol prompt was sourced at the user's request from:
+
+https://github.com/asgeirtj/system_prompts_leaks/blob/main/OpenAI/Codex/gpt-5.6-sol.md
+Pinned revision: 332f3e7ef5a5f317bf147c0838528fdaab423626
+Collector license: CC0 1.0 (see THIRD_PARTY_LICENSES/CC0-1.0.txt)
+
+The source repository identifies the text as a leaked third-party system prompt.
+Its CC0 dedication cannot grant rights the collector does not own. The prompt
+text is not covered by dsh-codex's MIT license.
