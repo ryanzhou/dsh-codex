@@ -63,8 +63,8 @@ type ShellResult = {
   signal: string | null;
   timedOut: boolean;
   timeoutMs: number;
-  stdout: { text: string; truncated: boolean };
-  stderr: { text: string; truncated: boolean };
+  stdout: { text: string; truncated: boolean; spillPath?: string };
+  stderr: { text: string; truncated: boolean; spillPath?: string };
   sandbox?: { mode: string; denied: boolean };
 };
 
@@ -87,13 +87,18 @@ function sandboxText(result: ShellResult): string {
     : "";
 }
 
+function outputText(name: string, output: ShellResult["stdout"]): string {
+  const truncated = output.truncated
+    ? "[" + name + " truncated; full output: " + (output.spillPath ?? "unavailable") + "]"
+    : "";
+  return [output.text, truncated].filter(Boolean).join("\n");
+}
+
 function formatShell(result: ShellResult, elapsedMs: number): string {
-  const output = [result.stdout.text, result.stderr.text, sandboxText(result)].filter(Boolean).join("\n");
+  const output = [outputText("stdout", result.stdout), outputText("stderr", result.stderr), sandboxText(result)].filter(Boolean).join("\n");
   const exit = result.exitCode === null ? "signal " + (result.signal ?? "unknown") : String(result.exitCode);
   const timeout = result.timedOut ? "command timed out after " + result.timeoutMs + " milliseconds\n" : "";
-  const lines = output ? output.split("\n").length : 0;
-  const truncated = result.stdout.truncated || result.stderr.truncated ? "Total output lines: " + lines + "\n" : "";
-  return timeout + "Exit code: " + exit + "\nWall time: " + (elapsedMs / 1000).toFixed(1) + " seconds\n" + truncated + "Output:\n" + output;
+  return timeout + "Exit code: " + exit + "\nWall time: " + (elapsedMs / 1000).toFixed(1) + " seconds\nOutput:\n" + output;
 }
 
 export function apply(ctx: Context): void {

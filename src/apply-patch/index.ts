@@ -130,13 +130,15 @@ export function applyChunks(path: string, source: string, chunks: Chunk[]): stri
   const replacements: Array<[number, number, string[]]> = [];
   let cursor = 0;
   for (const chunk of chunks) {
+    let insertion = lines.length;
     if (chunk.context !== undefined) {
       const context = seek(lines, [chunk.context], cursor, false);
       if (context < 0) throw new Error("Failed to find context '" + chunk.context + "' in " + path);
       cursor = context + 1;
+      insertion = cursor;
     }
     if (chunk.oldLines.length === 0) {
-      replacements.push([lines.length, 0, chunk.newLines]);
+      replacements.push([insertion, 0, chunk.newLines]);
       continue;
     }
     const found = seek(lines, chunk.oldLines, cursor, chunk.endOfFile);

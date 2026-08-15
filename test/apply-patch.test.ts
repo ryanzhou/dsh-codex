@@ -52,6 +52,19 @@ describe("apply_patch", () => {
     expect(await readFile(join(cwd, "quote.txt"), "utf8")).toBe("say \"bye\"\n");
   });
 
+  it("places insertion-only chunks after their named context", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "dsh-codex-"));
+    await writeFile(join(cwd, "anchor.txt"), "before\nanchor\nafter\n");
+    await applyPatch(patch(
+      "*** Begin Patch",
+      "*** Update File: anchor.txt",
+      "@@ anchor",
+      "+inserted",
+      "*** End Patch",
+    ), cwd);
+    expect(await readFile(join(cwd, "anchor.txt"), "utf8")).toBe("before\nanchor\ninserted\nafter\n");
+  });
+
   it("rejects duplicate resolved targets before publishing files", async () => {
     const cwd = await mkdtemp(join(tmpdir(), "dsh-codex-"));
     await expect(applyPatch(patch(

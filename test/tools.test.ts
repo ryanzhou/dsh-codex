@@ -95,7 +95,7 @@ describe("Codex tool catalog", () => {
     await expect(request.execute({ questions: [] }, exec)).rejects.toThrow("one to three questions");
   });
 
-  it("preserves DSH sandbox denial markers in shell_command output", async () => {
+  it("preserves DSH sandbox and truncation metadata in shell_command output", async () => {
     const definitions: ToolDefinition[] = [];
     const ctx = {
       on: () => () => undefined,
@@ -109,7 +109,7 @@ describe("Codex tool catalog", () => {
             signal: null,
             timedOut: false,
             timeoutMs: 10000,
-            stdout: { text: "", truncated: false },
+            stdout: { text: "retained tail", truncated: true, spillPath: "/tmp/full-output.log" },
             stderr: { text: "denied", truncated: false },
             sandbox: { mode: "workspace-write", denied: true },
           },
@@ -130,5 +130,7 @@ describe("Codex tool catalog", () => {
       concludeTurn: () => undefined,
     } as never);
     expect(value).toContain("[sandbox: file access denied under workspace-write mode]");
+    expect(value).toContain("[stdout truncated; full output: /tmp/full-output.log]");
+    expect(value).not.toContain("Total output lines: 1");
   });
 });
