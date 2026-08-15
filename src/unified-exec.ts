@@ -208,11 +208,12 @@ function workdir(value: string | undefined, base: string): string {
 async function policyFor(ctx: Context, args: ExecArgs, exec: ToolRunContext): Promise<SandboxExecutionPolicy> {
   const standing = ctx.sandboxPolicy.resolve(exec.agent ? { session: exec.agent.session } : undefined);
   const requested = args.sandbox_permissions === "require_escalated" ? "danger-full-access" : undefined;
-  validateEscalationArgs(requested, args.justification);
-  if (requested === undefined || args.justification === undefined) return standing;
+  const justification = args.justification?.trim() ? args.justification : undefined;
+  validateEscalationArgs(requested, justification);
+  if (requested === undefined || justification === undefined) return standing;
   const mode = await approveEscalation({
     requestedMode: requested,
-    justification: args.justification,
+    justification,
     effectiveMode: standing.mode,
     subject: "command",
   }, {

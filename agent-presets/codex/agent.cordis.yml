@@ -189,7 +189,7 @@
     allowParallelInProgress: false
 
 - id: codex-tools
-  name: '@ryantzhou/dsh-codex'
+  name: '@ryantzhou/dsh-codex/tools'
 
 # The compactor reads the pruner through its Cordis realm, so both services
 # must share this isolated group.

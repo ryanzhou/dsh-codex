@@ -8,6 +8,7 @@ It adds a **Codex-style mode** agent preset with:
 
 - grammar-constrained OpenAI custom tool calls for `apply_patch`;
 - Codex-shaped `exec_command`/`write_stdin` unified exec with yielded background sessions and interactive PTY support;
+- native Web Bash rows and a Codex-style live-process-only background terminal list;
 - Codex-shaped `update_plan`, `request_user_input`, and `view_image` function tools;
 - the GPT-5.6 Sol Codex system prompt from the user-selected prompt archive;
 - DSH's existing sandbox, approval, todo, question, attachment, and tool-presentation behavior underneath the Codex-style wire format.
@@ -45,7 +46,8 @@ The DSH bundle inserts one host plugin. At startup it:
 1. adds this package's immutable preset directory to the active preset registry;
 2. wraps each pi-ai provider once, immediately before dispatch, to attach the `apply_patch` Lark grammar;
 3. maps Codex unified exec sessions onto DSH's background-job and PTY primitives;
-4. removes the delegate schemas and their tool-specific guidance from Codex prompt assemblies.
+4. shadows the generic Web tool/job views with Codex Bash rows and live background terminals;
+5. removes the delegate schemas and their tool-specific guidance from Codex prompt assemblies.
 
 The Codex tools themselves delegate to DSH's existing `bash`/`pwsh`, `todo_write`, `ask_user_question`, and `read_image` tools. This keeps policy enforcement and UI behavior in their existing owners. `apply_patch` runs the bundled parser and applicator through the same sandboxed shell delegate.
 

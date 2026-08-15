@@ -34,4 +34,14 @@ describe("preset root bridge", () => {
     expect(composition).toContain("name: '@deepseek-ai/dsh-command-compact'");
     expect(composition).toContain("name: '@deepseek-ai/dsh-compaction-tool-result-pruner'");
   });
+
+  it("exposes the package root for DSH client discovery and keeps tools on their own subpath", async () => {
+    const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+    const host = await readFile(new URL("../cordis.patch.yml", import.meta.url), "utf8");
+    const preset = await readFile(new URL("../agent-presets/codex/agent.cordis.yml", import.meta.url), "utf8");
+    expect(manifest.exports["./package.json"]).toBe("./package.json");
+    expect(manifest.dsh.client.platform).toBe("web");
+    expect(host).toContain("name: '@ryantzhou/dsh-codex'");
+    expect(preset).toContain("name: '@ryantzhou/dsh-codex/tools'");
+  });
 });

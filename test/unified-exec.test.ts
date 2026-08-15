@@ -93,7 +93,13 @@ describe("unified exec", () => {
     const { definitions } = runtime(process);
     const exec = definitions.find((tool) => tool.name === "exec_command")!;
 
-    const result = await exec.execute({ cmd: "touch /outside", workdir: "src", yield_time_ms: 250 }, execution);
+    const result = await exec.execute({
+      cmd: "touch /outside",
+      workdir: "src",
+      yield_time_ms: 250,
+      sandbox_permissions: "use_default",
+      justification: "",
+    }, execution);
 
     expect(result).toContain("Process exited with code 1");
     expect(result).toContain("denied");
