@@ -26,4 +26,5 @@ describe("pi-ai bridge", () => {
     ]);
     expect(wire[0]).toMatchObject({ format: { type: "grammar", syntax: "lark" } });
   });
+
 });

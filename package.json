@@ -1,7 +1,7 @@
 {
   "name": "@ryanzhou/dsh-codex",
   "version": "0.1.0",
-  "description": "Codex-compatible native tools and agent preset for DeepSeek Harness",
+  "description": "Codex-style tools and agent preset for DeepSeek Harness",
   "type": "module",
   "packageManager": "pnpm@11.21.0",
   "license": "MIT",

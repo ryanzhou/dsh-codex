@@ -1,13 +1,13 @@
 # dsh-codex
 
-A drop-in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) extension that presents GPT models with the native, non-Code-Mode OpenAI Codex tool surface.
+A drop-in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) extension that gives GPT models a Codex-style environment using the native, non-Code-Mode OpenAI Codex tool surface.
 
-It adds a **Codex** agent preset with:
+It adds a **Codex-style mode** agent preset with:
 
 - grammar-constrained OpenAI custom tool calls for `apply_patch`;
 - Codex-shaped `shell_command`, `update_plan`, `request_user_input`, and `view_image` function tools;
 - the GPT-5.6 Sol Codex system prompt from the user-selected prompt archive;
-- DSH's existing sandbox, approval, todo, question, attachment, and tool-presentation behavior underneath the compatible wire format.
+- DSH's existing sandbox, approval, todo, question, attachment, and tool-presentation behavior underneath the Codex-style wire format.
 
 ## Why
 

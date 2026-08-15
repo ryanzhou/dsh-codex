@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { installPresetRoot } from "../src/presets.js";
 
@@ -18,5 +19,11 @@ describe("preset root bridge", () => {
     expect(presetService.resolvedRoots[1]?.trust).toBe("system");
     dispose();
     expect(presetService.resolvedRoots).toEqual([shipped, user]);
+  });
+
+  it("describes the preset as a Codex-style behavior mode", async () => {
+    const metadata = await readFile(new URL("../agent-presets/codex/preset.yml", import.meta.url), "utf8");
+    expect(metadata).toContain("name: Codex-style mode\n");
+    expect(metadata).toContain("description: Makes DSH behave like Codex for models post-trained on Codex agent behavior");
   });
 });

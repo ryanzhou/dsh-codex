@@ -30,6 +30,30 @@ describe("Codex tool catalog", () => {
     expect(Object.keys(definitions[1]?.parameters.properties ?? {})).toEqual([
       "command", "justification", "sandbox_permissions", "timeout_ms", "workdir",
     ]);
+
+    expect(definitions[0]?.presentCall?.({ patch: [
+      "*** Begin Patch",
+      "*** Add File: notes.txt",
+      "+hello",
+      "*** End Patch",
+    ].join("\n") })).toMatchObject({
+      card: "diff",
+      diffs: [{ path: "notes.txt", oldText: null, newText: "hello\n" }],
+    });
+    expect(definitions[1]?.presentCall?.({ command: "pwd", workdir: "/work" })).toEqual({
+      card: "terminal",
+      title: "pwd",
+      cwd: "/work",
+    });
+    expect(definitions[2]?.presentCall?.({ plan: [{ step: "Review", status: "in_progress" }] })).toMatchObject({
+      title: "Update todo list",
+      rawInput: [{ content: "Review", status: "in_progress" }],
+    });
+    expect(definitions[3]?.presentCall?.({ questions: [] })).toMatchObject({ title: "Ask user" });
+    expect(definitions[4]?.presentCall?.({ path: "diagram.png" })).toMatchObject({
+      title: "Read image diagram.png",
+      locations: [{ path: "diagram.png" }],
+    });
   });
 
   it("removes delegate schemas and guidance from the model assembly", async () => {
@@ -132,5 +156,13 @@ describe("Codex tool catalog", () => {
     expect(value).toContain("[sandbox: file access denied under workspace-write mode]");
     expect(value).toContain("[stdout truncated; full output: /tmp/full-output.log]");
     expect(value).not.toContain("Total output lines: 1");
+    expect(shell.presentResult?.({ command: "touch /outside" }, {
+      content: [{ type: "text", text: value as string }],
+      isError: false,
+    })).toEqual({
+      card: "terminal",
+      output: "retained tail\n[stdout truncated; full output: /tmp/full-output.log]\ndenied\n[sandbox: file access denied under workspace-write mode]",
+      exitCode: 1,
+    });
   });
 });

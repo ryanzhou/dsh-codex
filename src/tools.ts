@@ -2,7 +2,8 @@ import { fileURLToPath } from "node:url";
 import type { Context } from "@deepseek-ai/cordis";
 import type { ContentBlock } from "@deepseek-ai/dsh-llm";
 import type { PromptAssembly } from "@deepseek-ai/dsh-system-prompt";
-import { defineTool, type JsonValue, type ToolExecutionResult, type ToolRunContext } from "@deepseek-ai/dsh-tools";
+import { defineTool, type FileDiff, type JsonValue, type ToolExecutionResult, type ToolRunContext } from "@deepseek-ai/dsh-tools";
+import { parsePatch } from "./apply-patch/index.js";
 
 export const name = "codex-tools";
 export const inject = ["tools", "systemPrompt"];
@@ -34,6 +35,26 @@ function resultText(result: ToolExecutionResult): string {
     .filter((block): block is Extract<ContentBlock, { type: "text" }> => block.type === "text")
     .map((block) => block.text)
     .join("\n");
+}
+
+function patchPresentation(patch: string) {
+  try {
+    const hunks = parsePatch(patch);
+    const diffs: FileDiff[] = [];
+    const locations = hunks.map((hunk) => ({ path: hunk.kind === "update" && hunk.movePath ? hunk.movePath : hunk.path }));
+    for (const hunk of hunks) {
+      if (hunk.kind === "add") diffs.push({ path: hunk.path, oldText: null, newText: hunk.content });
+      if (hunk.kind === "update") for (const chunk of hunk.chunks) diffs.push({
+        path: hunk.movePath ?? hunk.path,
+        oldText: chunk.oldLines.join("\n") + (chunk.oldLines.length ? "\n" : ""),
+        newText: chunk.newLines.join("\n") + (chunk.newLines.length ? "\n" : ""),
+      });
+    }
+    if (diffs.length) return { card: "diff" as const, title: "Apply patch", diffs, locations };
+    return { card: "generic" as const, title: "Apply patch", kind: "edit" as const, locations };
+  } catch {
+    return { card: "generic" as const, title: "Apply patch", kind: "edit" as const };
+  }
 }
 
 async function dispatch(
@@ -101,6 +122,19 @@ function formatShell(result: ShellResult, elapsedMs: number): string {
   return timeout + "Exit code: " + exit + "\nWall time: " + (elapsedMs / 1000).toFixed(1) + " seconds\nOutput:\n" + output;
 }
 
+function presentShellResult(result: { content: ContentBlock[]; isError: boolean }) {
+  if (result.isError) return;
+  const text = result.content.filter((block) => block.type === "text").map((block) => block.text).join("\n");
+  const match = /^(?:command timed out after [^\n]+\n)?Exit code: ([^\n]+)\nWall time: [^\n]+\nOutput:\n([\s\S]*)$/.exec(text);
+  if (!match) return;
+  const exit = match[1]!;
+  return {
+    card: "terminal" as const,
+    output: match[2]!,
+    ...(exit.startsWith("signal ") ? { signal: exit.slice(7) } : { exitCode: Number(exit) }),
+  };
+}
+
 export function apply(ctx: Context): void {
   ctx.on("system-prompt/assemble", async (assembly, _context, next) => hideDelegates(await next()));
   const shell = process.platform === "win32" ? "pwsh" : "bash";
@@ -123,7 +157,11 @@ export function apply(ctx: Context): void {
       }
       return "Patch applied.";
     },
-    presentCall: () => ({ card: "generic", title: "Apply patch", kind: "edit" }),
+    presentCall: (args) => patchPresentation(args.patch),
+    presentResult: (args, result) => {
+      const view = patchPresentation(args.patch);
+      return !result.isError && view.card === "diff" ? { card: "diff", diffs: view.diffs } : undefined;
+    },
   }));
 
   ctx.tools.register(defineTool({
@@ -154,7 +192,8 @@ export function apply(ctx: Context): void {
       });
       return formatShell(result.value as unknown as ShellResult, Date.now() - started);
     },
-    presentCall: (args) => ({ card: "generic", title: args.command, kind: "execute" }),
+    presentCall: (args) => ({ card: "terminal", title: args.command, ...(args.workdir ? { cwd: args.workdir } : {}) }),
+    presentResult: (_args, result) => presentShellResult(result),
   }));
 
   ctx.tools.register(defineTool({
@@ -186,7 +225,12 @@ export function apply(ctx: Context): void {
       });
       return "Plan updated";
     },
-    presentCall: (args) => ({ card: "generic", title: "Update plan", kind: "other", rawInput: args.plan }),
+    presentCall: (args) => ({
+      card: "generic",
+      title: "Update todo list",
+      kind: "other",
+      rawInput: args.plan.map((step) => ({ content: step.step, status: step.status })),
+    }),
   }));
 
   ctx.tools.register(defineTool({
@@ -242,6 +286,7 @@ export function apply(ctx: Context): void {
         { answers: [...answer.selected, ...(answer.custom ? [answer.custom] : [])] },
       ])) };
     },
+    presentCall: (args) => ({ card: "generic", title: "Ask user", kind: "other", rawInput: args.questions }),
   }));
 
   ctx.tools.register(defineTool({
@@ -260,5 +305,11 @@ export function apply(ctx: Context): void {
         return result.content as unknown as Array<{ type: string } & Record<string, JsonValue>>;
       },
       isConcurrencySafe: () => true,
+      presentCall: (args) => ({
+        card: "generic",
+        title: "Read image " + args.path,
+        kind: "read",
+        locations: [{ path: args.path }],
+      }),
   }));
 }
