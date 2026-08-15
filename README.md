@@ -2,6 +2,8 @@
 
 A drop-in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) extension that gives GPT models a Codex-style environment using the native, non-Code-Mode OpenAI Codex tool surface.
 
+Looking to run DeepSeek V4 Flash in Codex instead? See [dsv4-codex-proxy](https://github.com/ryanzhou/dsv4-codex-proxy).
+
 It adds a **Codex-style mode** agent preset with:
 
 - grammar-constrained OpenAI custom tool calls for `apply_patch`;
