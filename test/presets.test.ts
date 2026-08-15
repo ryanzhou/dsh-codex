@@ -26,4 +26,12 @@ describe("preset root bridge", () => {
     expect(metadata).toContain("name: Codex-style mode\n");
     expect(metadata).toContain("description: Makes DSH behave like Codex for models post-trained on Codex agent behavior");
   });
+
+  it("mounts DSH's automatic and manual compaction services", async () => {
+    const composition = await readFile(new URL("../agent-presets/codex/agent.cordis.yml", import.meta.url), "utf8");
+    expect(composition).toContain("    compaction: true\n    toolResultPruner: true\n");
+    expect(composition).toContain("name: '@deepseek-ai/dsh-compaction-basic'");
+    expect(composition).toContain("name: '@deepseek-ai/dsh-command-compact'");
+    expect(composition).toContain("name: '@deepseek-ai/dsh-compaction-tool-result-pruner'");
+  });
 });
