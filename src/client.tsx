@@ -46,11 +46,28 @@ function BackgroundTerminals({ sessionId, useSessions }: JobProps) {
 export const inject = ["slots"];
 
 export function apply(ctx: ClientContext): void {
-  const NativeBash = ctx.slots.entries("tool.call.toolview").find((entry) => entry.options.key === "bash")!.component as ComponentType<NativeBashProps>;
-  const BashRow = (props: NativeBashProps) => <NativeBash {...props} toolName="bash" />;
-  ctx.slots.inject("tool.call.toolview", function* () {
-    yield ctx.slots.register({ name: "tool.call.toolview", key: "exec_command", priority: -10, locale: "conversation" }, BashRow);
-    yield ctx.slots.register({ name: "tool.call.toolview", key: "write_stdin", priority: -10, locale: "conversation" }, BashRow);
+  ctx.slots.inject("tool.call.toolview", () => {
+    let disposeAliases: (() => void) | undefined;
+    let unsubscribe = () => {};
+    const install = () => {
+      const entry = ctx.slots.entries("tool.call.toolview").find(({ options }) => options.key === "bash");
+      if (entry === undefined) return;
+      unsubscribe();
+      const NativeBash = entry.component as ComponentType<NativeBashProps>;
+      const BashRow = (props: NativeBashProps) => <NativeBash {...props} toolName="bash" />;
+      const disposeExec = ctx.slots.register({ name: "tool.call.toolview", key: "exec_command", priority: -10, locale: "conversation" }, BashRow);
+      const disposeWrite = ctx.slots.register({ name: "tool.call.toolview", key: "write_stdin", priority: -10, locale: "conversation" }, BashRow);
+      disposeAliases = () => {
+        disposeWrite();
+        disposeExec();
+      };
+    };
+    unsubscribe = ctx.slots.subscribe("tool.call.toolview", install);
+    install();
+    return () => {
+      unsubscribe();
+      disposeAliases?.();
+    };
   });
   ctx.slots.inject("conversation.session.header.actions", () => ctx.slots.register({
     name: "conversation.session.header.actions",
